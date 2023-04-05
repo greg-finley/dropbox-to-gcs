@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "dropbox-gcs"
+version = "0.1.0"
+description = ""
+authors = ["Greg Finley <gregory.finley@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+dropbox = "^11.36.0"
+python-dotenv = "^1.0.0"
+google-cloud-storage = "^2.8.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
