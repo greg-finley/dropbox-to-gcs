@@ -12,7 +12,7 @@ gcs_client = storage.Client()
 gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
 # directory_path = "/Users/gregoryfinley/Dropbox"
 directory_path = (
-    "/Users/gregoryfinley/Dropbox/Greg Stuff/Greg Documents/CHICO STATE/Junior/Fall '06"
+    "/Users/gregoryfinley/Dropbox/Greg Stuff/Greg Documents/CHICO STATE/Junior"
 )
 mysql_connection = MySQLdb.connect(
     host=os.getenv("MYSQL_HOST"),
@@ -38,9 +38,12 @@ def process_files_recursively(directory_path):
             file_count += subdirectory_file_count
         else:
             clean_file_path = file_path.removeprefix("/Users/gregoryfinley/Dropbox/")
-            if clean_file_path in existing_files:
+            if clean_file_path in existing_files or clean_file_path.endswith(
+                ".DS_Store"
+            ):
                 print(f"Skipping {clean_file_path}")
                 continue
+            print(f"Uploading {clean_file_path}...")
             dropbox_file = dbx.files_download("/" + clean_file_path)
             content_type = dropbox_file[1].headers.get("Content-Type")
             gcs_file = gcs_bucket.blob(clean_file_path)
