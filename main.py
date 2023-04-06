@@ -18,11 +18,11 @@ mysql_connection = mysql.connector.connect(
     database=os.getenv("MYSQL_DATABASE"),
     ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
 )
-cursor = mysql_connection.cursor()
 
 
 def process_files_recursively(file_list):
     query = "SELECT desktop_path FROM dropbox"
+    cursor = mysql_connection.cursor()
     cursor.execute(query)
     existing_files = [row[0] for row in cursor.fetchall()]
     file_count = 0
@@ -37,10 +37,13 @@ def process_files_recursively(file_list):
         gcs_file = gcs_bucket.blob(clean_file_path)
         gcs_file.upload_from_string(dropbox_file[1].content, content_type=content_type)
         query = "INSERT INTO dropbox (desktop_path) VALUES (%s)"
+        cursor.close()
+        cursor = mysql_connection.cursor()
         cursor.execute(query, (clean_file_path,))
         mysql_connection.commit()
         print(f"Uploaded {clean_file_path} - {content_type}")
         file_count += 1
+    cursor.close()
     return file_count
 
 
@@ -53,5 +56,4 @@ try:
     total_file_count = process_files_recursively(file_list)
     print(f"Total files: {total_file_count}")
 finally:
-    cursor.close()
     mysql_connection.close()
