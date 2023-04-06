@@ -24,7 +24,7 @@ def process_files_recursively(file_list):
     query = "SELECT desktop_path FROM dropbox"
     with mysql_connection.cursor() as cursor:
         cursor.execute(query)
-    existing_files = [row[0] for row in cursor.fetchall()]
+        existing_files = [row[0] for row in cursor.fetchall()]
     file_count = 0
     for filename in file_list:
         clean_file_path = filename.removeprefix("/Users/gregoryfinley/Dropbox/")
@@ -39,7 +39,7 @@ def process_files_recursively(file_list):
         query = "INSERT INTO dropbox (desktop_path) VALUES (%s)"
         with mysql_connection.cursor() as cursor:
             cursor.execute(query, (clean_file_path,))
-        mysql_connection.commit()
+            mysql_connection.commit()
         print(f"Uploaded {clean_file_path} - {content_type}")
         file_count += 1
     return file_count
