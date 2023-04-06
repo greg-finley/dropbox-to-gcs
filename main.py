@@ -1,88 +1,62 @@
-import mimetypes
 import os
 
 import dropbox
+import MySQLdb
 from dotenv import load_dotenv
 from google.cloud import storage
 
 load_dotenv()
 
-# Check MySql if file has been uploaded already
+dbx = dropbox.Dropbox(os.getenv("ACCESS_TOKEN"))
+gcs_client = storage.Client()
+gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
+# directory_path = "/Users/gregoryfinley/Dropbox"
+directory_path = (
+    "/Users/gregoryfinley/Dropbox/Greg Stuff/Greg Documents/CHICO STATE/Junior/Fall '06"
+)
+mysql_connection = MySQLdb.connect(
+    host=os.getenv("MYSQL_HOST"),
+    user=os.getenv("MYSQL_USERNAME"),
+    passwd=os.getenv("MYSQL_PASSWORD"),
+    db=os.getenv("MYSQL_DATABASE"),
+    ssl_mode="VERIFY_IDENTITY",
+    ssl={"ca": os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt")},
+)
+mysql_connection.autocommit(True)
 
 
-def print_files_recursively(directory_path):
+def process_files_recursively(directory_path):
+    query = "SELECT desktop_path FROM dropbox"
+    mysql_connection.query(query)
+    r = mysql_connection.store_result()
+    existing_files = [row["desktop_path"] for row in r.fetch_row(maxrows=0, how=1)]
     file_count = 0
     for filename in os.listdir(directory_path):
         file_path = os.path.join(directory_path, filename)
         if os.path.isdir(file_path):
-            subdirectory_file_count = print_files_recursively(file_path)
+            subdirectory_file_count = process_files_recursively(file_path)
             file_count += subdirectory_file_count
         else:
-            content_type = (
-                mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+            clean_file_path = file_path.removeprefix("/Users/gregoryfinley/Dropbox/")
+            if clean_file_path in existing_files:
+                print(f"Skipping {clean_file_path}")
+                continue
+            dropbox_file = dbx.files_download("/" + clean_file_path)
+            content_type = dropbox_file[1].headers.get("Content-Type")
+            gcs_file = gcs_bucket.blob(clean_file_path)
+            gcs_file.upload_from_string(
+                dropbox_file[1].content, content_type=content_type
             )
-            print(
-                f"{file_path.removeprefix('/Users/gregoryfinley/Dropbox/')} - {content_type}"
-            )
+            query = "INSERT INTO dropbox (desktop_path) VALUES (%s)"
+            mysql_connection.cursor().execute(query, (clean_file_path,))
+
+            print(f"Uploaded {clean_file_path} - {content_type}")
             file_count += 1
     return file_count
 
 
-directory_path = "/Users/gregoryfinley/Dropbox"
-total_file_count = print_files_recursively(directory_path)
-print(f"Total files: {total_file_count}")
-
-
-# # Initialize Dropbox client
-# dbx = dropbox.Dropbox(os.getenv("ACCESS_TOKEN"))
-
-# has_more = True
-# cursor = None
-# num_files = 0
-
-# while has_more:
-#     if cursor is None:
-#         result = dbx.files_list_folder(path="", recursive=True)
-#     else:
-#         result = dbx.files_list_folder_continue(cursor)
-
-#     for entry in result.entries:
-#         # Skip folders
-#         if isinstance(entry, dropbox.files.FolderMetadata):
-#             continue
-
-#         # Skip deleted
-#         if isinstance(entry, dropbox.files.DeletedMetadata):
-#             continue
-
-#         if not entry.path_lower.endswith(".pdf"):
-#             continue
-
-#         # if not entry.path_lower.endswith(".tiff"):
-#         #     continue
-
-#         # Print the file and its folder path
-#         print(entry.path_lower)
-#         dropbox_file = dbx.files_download(entry.path_display)
-#         # Print the file content-type
-#         content_type = dropbox_file[1].headers.get("Content-Type")
-
-#         # Create a GCS client object
-#         gcs_client = storage.Client()
-
-#         # Get a reference to the GCS bucket
-#         gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
-
-#         # Upload the file to GCS
-#         gcs_file = gcs_bucket.blob(entry.path_lower)
-#         gcs_file.upload_from_string(dropbox_file[1].content, content_type=content_type)
-#         num_files += 1
-
-#     # Update cursor
-#     cursor = result.cursor
-
-#     # Repeat only if there's more to do
-#     # has_more = result.has_more
-#     has_more = False
-
-# print("Total number of files: ", num_files)
+try:
+    total_file_count = process_files_recursively(directory_path)
+    print(f"Total files: {total_file_count}")
+finally:
+    mysql_connection.close()

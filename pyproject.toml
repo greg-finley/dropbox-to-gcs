@@ -11,6 +11,7 @@ python = "^3.9"
 dropbox = "^11.36.0"
 python-dotenv = "^1.0.0"
 google-cloud-storage = "^2.8.0"
+mysqlclient = "^2.1.1"
 
 
 [build-system]
