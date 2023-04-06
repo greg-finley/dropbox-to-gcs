@@ -10,6 +10,7 @@ load_dotenv()
 dbx = dropbox.Dropbox(os.getenv("ACCESS_TOKEN"))
 gcs_client = storage.Client()
 gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
+gcs_bucket_file_list = gcs_client.get_bucket("greg-finley-dropbox-file-list")
 mysql_connection = mysql.connector.connect(
     host=os.getenv("MYSQL_HOST"),
     user=os.getenv("MYSQL_USERNAME"),
@@ -43,8 +44,10 @@ def process_files_recursively(file_list):
     return file_count
 
 
-with open("file_list.txt") as file:
-    file_list = file.read().splitlines()
+# Get file list from GCS
+gcs_file = gcs_bucket_file_list.blob("file_list.txt")
+file_list = gcs_file.download_as_string().decode("utf-8").splitlines()
+
 
 try:
     total_file_count = process_files_recursively(file_list)
