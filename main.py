@@ -1,7 +1,7 @@
 import os
 
 import dropbox
-import MySQLdb
+import mysql.connector
 from dotenv import load_dotenv
 from google.cloud import storage
 
@@ -11,25 +11,21 @@ dbx = dropbox.Dropbox(os.getenv("ACCESS_TOKEN"))
 gcs_client = storage.Client()
 gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
 # directory_path = "/Users/gregoryfinley/Dropbox"
-directory_path = (
-    "/Users/gregoryfinley/Dropbox/Greg Stuff/Greg Documents/CHICO STATE/Junior"
-)
-mysql_connection = MySQLdb.connect(
+directory_path = "/Users/gregoryfinley/Dropbox/Greg Stuff/Greg Documents/CHICO STATE/Soph/Fall '05/RELS 110"
+mysql_connection = mysql.connector.connect(
     host=os.getenv("MYSQL_HOST"),
     user=os.getenv("MYSQL_USERNAME"),
     passwd=os.getenv("MYSQL_PASSWORD"),
-    db=os.getenv("MYSQL_DATABASE"),
-    ssl_mode="VERIFY_IDENTITY",
-    ssl={"ca": os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt")},
+    database=os.getenv("MYSQL_DATABASE"),
+    ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
 )
-mysql_connection.autocommit(True)
+cursor = mysql_connection.cursor()
 
 
 def process_files_recursively(directory_path):
     query = "SELECT desktop_path FROM dropbox"
-    mysql_connection.query(query)
-    r = mysql_connection.store_result()
-    existing_files = [row["desktop_path"] for row in r.fetch_row(maxrows=0, how=1)]
+    cursor.execute(query)
+    existing_files = [row[0] for row in cursor.fetchall()]
     file_count = 0
     for filename in os.listdir(directory_path):
         file_path = os.path.join(directory_path, filename)
@@ -51,7 +47,8 @@ def process_files_recursively(directory_path):
                 dropbox_file[1].content, content_type=content_type
             )
             query = "INSERT INTO dropbox (desktop_path) VALUES (%s)"
-            mysql_connection.cursor().execute(query, (clean_file_path,))
+            cursor.execute(query, (clean_file_path,))
+            mysql_connection.commit()
 
             print(f"Uploaded {clean_file_path} - {content_type}")
             file_count += 1
@@ -62,4 +59,5 @@ try:
     total_file_count = process_files_recursively(directory_path)
     print(f"Total files: {total_file_count}")
 finally:
+    cursor.close()
     mysql_connection.close()
