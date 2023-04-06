@@ -1,9 +1,9 @@
 import os
 
+from google.cloud import storage
+
 # directory_path = "/Users/gregoryfinley/Dropbox"
-directory_path = (
-    "/Users/gregoryfinley/Dropbox/Greg Stuff/Greg Documents/CHICO STATE/Soph"
-)
+directory_path = "/Users/gregoryfinley/Dropbox/Greg Stuff/Greg Documents/GEORGE MASON"
 
 
 def build_file_list(directory_path):
@@ -19,6 +19,9 @@ def build_file_list(directory_path):
 
 
 file_list = build_file_list(directory_path)
-with open("file_list.txt", "w") as file:
-    for file_path in file_list:
-        file.write(file_path + "\n")
+
+# Write file list to GCS
+gcs_client = storage.Client()
+gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-file-list")
+gcs_file = gcs_bucket.blob("file_list.txt")
+gcs_file.upload_from_string("\n".join(file_list))
