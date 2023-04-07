@@ -14,3 +14,8 @@ source .bashrc
 git clone https://github.com/greg-finley/dropbox-to-gcs
 cd dropbox-to-gcs && poetry install
 ```
+
+# TODO
+
+1. Publish the net-new files to PubSub.
+2. Process files from the PubSub queue using Cloud Functions.
