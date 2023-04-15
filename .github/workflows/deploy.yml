@@ -5,7 +5,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: test
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: "read"
