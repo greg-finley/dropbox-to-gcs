@@ -1,7 +1,7 @@
 import base64
 
 
-def hello_pubsub(event, context):
+def run(event, context):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
          event (dict): Event payload.
