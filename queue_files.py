@@ -35,7 +35,9 @@ def queue_files_for_download():
     missing_files = [file for file in file_list if file not in existing_files]
     futures = []
     for file in missing_files[:NUM_FILES]:
-        future = publisher.publish(TOPIC_NAME, file.encode("utf-8"))
+        future = publisher.publish(
+            TOPIC_NAME, file.removeprefix(DROPBOX_PREFIX).encode("utf-8")
+        )
         futures.append(future)
 
     for future in futures:
