@@ -29,7 +29,7 @@ def queue_files_for_download():
     query = "SELECT desktop_path FROM dropbox"
     cursor = mysql_connection.cursor()
     cursor.execute(query)
-    existing_files = [DROPBOX_PREFIX + row[0] for row in cursor.fetchall()]
+    existing_files = {DROPBOX_PREFIX + row[0] for row in cursor.fetchall()}
     cursor.close()
 
     missing_files = [file for file in file_list if file not in existing_files]
