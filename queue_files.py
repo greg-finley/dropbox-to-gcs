@@ -17,6 +17,7 @@ TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 def queue_files_for_download():
     # Find all files we have locally
     file_list = build_file_list(DIRECTORY_PATH)
+    print(f"Found {len(file_list)} files locally")
 
     # Get the list of files we have already processed
     mysql_connection = mysql.connector.connect(
