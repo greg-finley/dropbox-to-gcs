@@ -25,7 +25,7 @@ jobs:
           runtime: "python310"
           entry_point: "run"
           memory_mb: 128
-          secret_environment_variables: "MYSQL_HOST=projects/greg-finley/secrets/MYSQL_HOST/versions/latest,MYSQL_USERNAME=projects/greg-finley/secrets/MYSQL_USERNAME/versions/latest,MYSQL_PASSWORD=projects/greg-finley/secrets/MYSQL_PASSWORD/versions/latest,MYSQL_DATABASE=projects/greg-finley/secrets/MYSQL_DATABASE/versions/latest"
+          secret_environment_variables: "MYSQL_HOST=projects/greg-finley/secrets/MYSQL_HOST/versions/latest,MYSQL_USERNAME=projects/greg-finley/secrets/MYSQL_USERNAME/versions/latest,MYSQL_PASSWORD=projects/greg-finley/secrets/MYSQL_PASSWORD/versions/latest,MYSQL_DATABASE=projects/greg-finley/secrets/MYSQL_DATABASE/versions/latest,DROPBOX_ACCESS_TOKEN=projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest"
           timeout: 120
           event_trigger_type: "providers/cloud.pubsub/eventTypes/topic.publish"
           event_trigger_resource: "projects/greg-finley/topics/dropbox-backup"
