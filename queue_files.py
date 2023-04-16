@@ -7,7 +7,7 @@ from google.cloud import pubsub_v1
 load_dotenv()
 
 DROPBOX_PREFIX = "/Users/gregoryfinley/Dropbox/"
-DIRECTORY_PATH = "/Users/gregoryfinley/Dropbox/Greg Stuff"
+DIRECTORY_PATH = "/Users/gregoryfinley/Dropbox/Shared Stuff/TAXES"
 NUM_FILES = int(os.getenv("NUM_FILES"))
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 
@@ -42,6 +42,8 @@ def queue_files_for_download():
 
     for future in futures:
         future.result()
+
+    print(f"Queued {len(futures)} files for download")
 
 
 def build_file_list(directory_path):
