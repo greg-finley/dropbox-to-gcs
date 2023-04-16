@@ -21,7 +21,7 @@ jobs:
       - id: "deploy"
         uses: "google-github-actions/deploy-cloud-functions@v0"
         with:
-          name: "projects/greg-finley/locations/us-west1/functions/dropbox-backup2"
+          name: "projects/greg-finley/locations/us-west1/functions/dropbox-backup-function"
           runtime: "python310"
           entry_point: "run"
           memory_mb: 128
