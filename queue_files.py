@@ -41,6 +41,7 @@ def queue_files_for_download():
         future = publisher.publish(
             TOPIC_NAME, file.removeprefix(DROPBOX_PREFIX).encode("utf-8")
         )
+        print(file)
         futures.append(future)
         if i != 0 and i % BATCH_SIZE == 0:
             print(f"Queued {i} files for download")
@@ -61,7 +62,7 @@ def build_file_list(directory_path):
         file_path = os.path.join(directory_path, filename)
         if os.path.isdir(file_path):
             file_list.extend(build_file_list(file_path))
-        elif not file_path.endswith(".DS_Store"):
+        elif not file_path.endswith(".DS_Store") and not file_path.endswith(".dropbox"):
             file_list.append(file_path)
 
     return file_list
