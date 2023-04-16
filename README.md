@@ -29,15 +29,15 @@ curl https://api.dropbox.com/oauth2/token \
 
 Store to Google Cloud as a Secret called `DROPBOX_ACCESS_TOKEN`.
 
-3. Run the queueing script
+4. Run the queueing script
 
 `poetry run python queue_files.py`
 This will compare the list of Dropbox files on my computer against a list of already-processed files in MySQL. It will write PubSub messages with the file names that still need to be processed, which a Cloud Function will pick up (see next section). Through trial and error, I found pushing 100 file names to the queue every 5 seconds seems to get through the files mostly without any errors.
 
-4. The Cloud Function
+5. The Cloud Function
 
 The Cloud Function is pretty simple: It reads the filename from the PubSub message, then it downloads that file from Dropbox and writes it to Google Cloud Storage. The Cloud Function is deployed via GitHub Actions in `.github/workflows/deploy.yml`.
 
-5. Troubleshoot
+6. Troubleshoot
 
 Check the Cloud Function for errors. Most seem to be retriable, but `queue_files.py` occasionally needed to be adjusted to skip certain files (i.e. `.DS_Store`, `.dropbox`). Eventually, you should be able to run `queue_files.py` and it will report that there are 0 files to queue (i.e., you have loaded everything).
