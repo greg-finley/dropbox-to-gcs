@@ -9,8 +9,7 @@ load_dotenv()
 
 DROPBOX_PREFIX = "/Users/gregoryfinley/Dropbox/"
 DIRECTORY_PATH = "/Users/gregoryfinley/Dropbox"
-NUM_FILES = int(os.getenv("NUM_FILES"))
-BATCH_SIZE = int(os.getenv("BATCH_SIZE"))
+BATCH_SIZE = int(os.getenv("BATCH_SIZE"), 20)
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 
 
@@ -37,7 +36,7 @@ def queue_files_for_download():
 
     missing_files = [file for file in file_list if file not in existing_files]
     futures = []
-    for i, file in enumerate(missing_files[:NUM_FILES]):
+    for i, file in enumerate(missing_files):
         future = publisher.publish(
             TOPIC_NAME, file.removeprefix(DROPBOX_PREFIX).encode("utf-8")
         )
@@ -48,7 +47,7 @@ def queue_files_for_download():
             for future in futures:
                 future.result()
             futures = []
-            sleep(10)
+            sleep(1)
 
     for future in futures:
         future.result()

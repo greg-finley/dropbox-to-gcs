@@ -32,7 +32,7 @@ Store to Google Cloud as a Secret called `DROPBOX_ACCESS_TOKEN`.
 4. Run the queueing script
 
 `poetry run python queue_files.py`
-This will compare the list of Dropbox files on my computer against a list of already-processed files in MySQL. It will write PubSub messages with the file names that still need to be processed, which a Cloud Function will pick up (see next section). Through trial and error, I found pushing 100 file names to the queue every 5 seconds seems to get through the files mostly without any errors.
+This will compare the list of Dropbox files on my computer against a list of already-processed files in MySQL. It will write PubSub messages with the file names that still need to be processed, which a Cloud Function will pick up (see next section). Through trial and error, I found pushing 20 file names to the queue every second seems to get through the files mostly without any errors.
 
 5. The Cloud Function
 
