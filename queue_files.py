@@ -8,6 +8,7 @@ from google.cloud import pubsub_v1
 load_dotenv()
 
 DROPBOX_PREFIX = "/Users/gregoryfinley/Dropbox/"
+CAMERA_UPLOADS_PREFIX = "/Users/gregoryfinley/Dropbox/Camera Uploads/"
 DIRECTORY_PATH = "/Users/gregoryfinley/Dropbox"
 BATCH_SIZE = int(os.getenv("BATCH_SIZE"), 20)
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
@@ -33,8 +34,17 @@ def queue_files_for_download():
     cursor.execute(query)
     existing_files = {DROPBOX_PREFIX + row[0] for row in cursor.fetchall()}
     cursor.close()
+    # Wife sometimes moves files out of the Camera Uploads folder, so check for exact name matches
+    camera_uploads_filenames = {
+        f.split("/")[-1] for f in existing_files if f.startswith(CAMERA_UPLOADS_PREFIX)
+    }
 
-    missing_files = [file for file in file_list if file not in existing_files]
+    missing_files = [
+        file
+        for file in file_list
+        if file not in existing_files
+        and file.split("/")[-1] not in camera_uploads_filenames
+    ]
     futures = []
     for i, file in enumerate(missing_files):
         future = publisher.publish(
