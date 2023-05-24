@@ -1,6 +1,12 @@
 name: deploy
 on:
   push:
+    branches:
+      - main
+    paths:
+      - main.py
+      - requirements.txt
+      - .github/workflows/deploy.yml
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,7 +25,7 @@ jobs:
           credentials_json: "${{ secrets.gcp_credentials }}"
 
       - id: "deploy"
-        uses: "google-github-actions/deploy-cloud-functions@v0"
+        uses: "google-github-actions/deploy-cloud-functions@v1"
         with:
           name: "projects/greg-finley/locations/us-west1/functions/dropbox-backup-function"
           runtime: "python310"
