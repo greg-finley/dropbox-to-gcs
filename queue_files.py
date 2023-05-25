@@ -77,6 +77,11 @@ def queue_files_for_download():
         if file not in existing_files
         and file.split("/")[-1] not in camera_uploads_filenames
     ]
+    if not missing_files:
+        print("No files to queue for download")
+        return
+
+    refresh_token()
     futures = []
     for i, file in enumerate(missing_files):
         future = publisher.publish(
@@ -110,5 +115,4 @@ def build_file_list(directory_path):
 
 
 if __name__ == "__main__":
-    refresh_token()
     queue_files_for_download()
