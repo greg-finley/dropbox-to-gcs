@@ -1,4 +1,4 @@
-def run(request):
+def run(event, context):
     """Responds to any HTTP request.
     Args:
         request (flask.Request): HTTP request object.
