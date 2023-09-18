@@ -1,4 +1,7 @@
 from flask import Response
+from google.cloud import pubsub_v1
+
+TOPIC_NAME = "dropbox-queue-files"
 
 
 def run(request):
@@ -10,9 +13,10 @@ def run(request):
         Response object using
         `make_response <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>`.
     """
+    publisher = pubsub_v1.PublisherClient()
+    publisher.publish(TOPIC_NAME, "".encode("utf-8")).result()
+
     resp = Response(request.args.get("challenge"))
     resp.headers["Content-Type"] = "text/plain"
     resp.headers["X-Content-Type-Options"] = "nosniff"
-    print(request.data)
-
     return resp
