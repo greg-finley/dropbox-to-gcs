@@ -25,7 +25,8 @@ def run(event, context):
     content_type = dropbox_file[1].headers.get("Content-Type")
     gcs_file = gcs_bucket.blob(filename)
     gcs_file.upload_from_string(dropbox_file[1].content, content_type=content_type)
-    query = "INSERT INTO dropbox (desktop_path, status) VALUES (%s, 'done')"
+    query = """INSERT INTO dropbox (desktop_path, status) VALUES (%s, 'done')
+    ON DUPLICATE KEY UPDATE status = 'done'"""
     cursor = mysql_connection.cursor()
     cursor.execute(query, (filename,))
     cursor.close()
