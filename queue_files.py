@@ -2,9 +2,8 @@ import os
 from time import sleep
 
 import mysql.connector
-import requests
 from dotenv import load_dotenv
-from google.cloud import pubsub_v1, secretmanager
+from google.cloud import pubsub_v1
 
 load_dotenv()
 
@@ -14,36 +13,6 @@ DIRECTORY_PATH = "/Users/gregoryfinley/Dropbox"
 BATCH_SIZE = int(os.getenv("BATCH_SIZE"), 20)
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
-
-
-def refresh_token() -> None:
-    response = requests.post(
-        "https://api.dropbox.com/oauth2/token",
-        data={
-            "refresh_token": os.environ["DROPBOX_REFRESH_TOKEN"],
-            "grant_type": "refresh_token",
-            "client_id": os.environ["DROPBOX_CLIENT_ID"],
-            "client_secret": os.environ["DROPBOX_CLIENT_SECRET"],
-        },
-    )
-    response.raise_for_status()
-    token = response.json()["access_token"]
-
-    secret_client = secretmanager.SecretManagerServiceClient()
-    # Add a new version
-    secret_version = secret_client.add_secret_version(
-        request={
-            "payload": {"data": token.encode("utf-8")},
-            "parent": SECRET_NAME,
-        }
-    )
-    secret_version_number: int = int(secret_version.name.split("/")[-1])
-    # Delete the old version
-    secret_client.destroy_secret_version(
-        request={
-            "name": f"{SECRET_NAME}/versions/{secret_version_number - 1}",
-        }
-    )
 
 
 def queue_files_for_download():
@@ -81,7 +50,7 @@ def queue_files_for_download():
         print("No files to queue for download")
         return
 
-    refresh_token()
+    # A cloud function is now in charge of refreshing the dropbox token
     futures = []
     for i, file in enumerate(missing_files):
         future = publisher.publish(
