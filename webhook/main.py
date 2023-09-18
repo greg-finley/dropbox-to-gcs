@@ -1,7 +1,7 @@
 from flask import Response
 from google.cloud import pubsub_v1
 
-TOPIC_NAME = "dropbox-queue-files"
+TOPIC_NAME = "projects/greg-finley/topics/dropbox-queue-files"
 
 
 def run(request):
