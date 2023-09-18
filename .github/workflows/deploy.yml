@@ -4,8 +4,8 @@ on:
     branches:
       - main
     paths:
-      - main.py
-      - requirements.txt
+      - process_file/main.py
+      - process_file/requirements.txt
       - .github/workflows/deploy.yml
 jobs:
   deploy:
@@ -30,6 +30,7 @@ jobs:
           name: "projects/greg-finley/locations/us-west1/functions/dropbox-backup-function"
           runtime: "python310"
           entry_point: "run"
+          source_dir: "process_file"
           memory_mb: 4096
           secret_environment_variables: "MYSQL_HOST=projects/greg-finley/secrets/MYSQL_HOST/versions/latest,MYSQL_USERNAME=projects/greg-finley/secrets/MYSQL_USERNAME/versions/latest,MYSQL_PASSWORD=projects/greg-finley/secrets/MYSQL_PASSWORD/versions/latest,MYSQL_DATABASE=projects/greg-finley/secrets/MYSQL_DATABASE/versions/latest,DROPBOX_ACCESS_TOKEN=projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest"
           timeout: 120
