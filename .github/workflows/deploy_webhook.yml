@@ -1,0 +1,37 @@
+name: deploy_webhook
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - webhook/main.py
+      - webhook/requirements.txt
+      - .github/workflows/deploy_webhook.yml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v0"
+        with:
+          credentials_json: "${{ secrets.gcp_credentials }}"
+
+      - id: "deploy"
+        uses: "google-github-actions/deploy-cloud-functions@v1"
+        with:
+          name: "projects/greg-finley/locations/us-west1/functions/dropbox-webhook"
+          runtime: "python311"
+          entry_point: "run"
+          source_dir: "process_file"
+          memory_mb: 128
+          timeout: 60
+          min_instances: 0
+          max_instances: 100

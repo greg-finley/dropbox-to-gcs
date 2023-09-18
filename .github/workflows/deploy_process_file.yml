@@ -1,4 +1,4 @@
-name: deploy
+name: deploy_process_file
 on:
   push:
     branches:
@@ -6,7 +6,7 @@ on:
     paths:
       - process_file/main.py
       - process_file/requirements.txt
-      - .github/workflows/deploy.yml
+      - .github/workflows/deploy_process_file.yml
 jobs:
   deploy:
     runs-on: ubuntu-latest
