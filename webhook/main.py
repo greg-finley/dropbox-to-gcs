@@ -14,7 +14,7 @@ def run(request):
         `make_response <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>`.
     """
     publisher = pubsub_v1.PublisherClient()
-    publisher.publish(TOPIC_NAME, "".encode("utf-8")).result()
+    publisher.publish(TOPIC_NAME, "Hello".encode("utf-8")).result()
 
     resp = Response(request.args.get("challenge"))
     resp.headers["Content-Type"] = "text/plain"
