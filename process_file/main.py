@@ -31,6 +31,6 @@ def run(event, context):
     ON DUPLICATE KEY UPDATE status = 'done'
     """
     cursor = mysql_connection.cursor()
-    cursor.execute(query, (filename,))
+    cursor.execute(query, (filename, filename))
     cursor.close()
     print(f"Uploaded {filename} - {content_type}")
