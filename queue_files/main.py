@@ -71,7 +71,8 @@ def run(event, context):
             cursor = mysql_connection.cursor()
             try:
                 cursor.execute(query, (clean_name, clean_name))
-            # Maybe we already enqueued this file
+                print(f"Queued {clean_name}")
+            # Maybe we already enqueued this file; continue instead of enqueueing again
             except mysql.connector.Error as err:
                 print(f"Failed to insert entry: {err}")
                 continue
