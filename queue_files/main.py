@@ -1,4 +1,5 @@
 import os
+from time import sleep
 
 import dropbox
 import mysql.connector
@@ -54,9 +55,12 @@ def run(event, context):
     publisher = pubsub_v1.PublisherClient()
 
     futures = []
-    for entry in entries:
+    for i, entry in enumerate(entries):
+        # Every third item, sleep a bit
+        if i % 3 == 0:
+            sleep(1)
+        clean_name = entry.path_display.removeprefix("/")
         if isinstance(entry, dropbox.files.FileMetadata):
-            clean_name = entry.path_display.removeprefix("/")
             print(f"Queueing {clean_name}")
             query = """
             INSERT INTO dropbox (desktop_path, filename, status)
@@ -73,7 +77,13 @@ def run(event, context):
                 cursor.close()
             future = publisher.publish(TOPIC_NAME, clean_name.encode("utf-8"))
             futures.append(future)
-        # TODO: Handle deletes and handle moving from "Camera Uploads"
+        elif isinstance(entry, dropbox.files.DeletedMetadata):
+            print(f"Deleting {entry.path_display}")
+            query = "UPDATE dropbox SET status = 'deleted' WHERE desktop_path = %s"
+            cursor = mysql_connection.cursor()
+            cursor.execute(query, (clean_name,))
+            cursor.close()
+            dbx.files_delete_v2(entry.path_display)
 
     for future in futures:
         future.result()
