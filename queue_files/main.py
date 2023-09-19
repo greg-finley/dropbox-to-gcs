@@ -66,7 +66,9 @@ def run(event, context):
                 continue
             finally:
                 cursor.close()
-            future = publisher.publish(TOPIC_NAME, entry.path_display.encode("utf-8"))
+            future = publisher.publish(
+                TOPIC_NAME, entry.path_display.removeprefix("/").encode("utf-8")
+            )
             futures.append(future)
         # TODO: Handle deletes and handle moving from "Camera Uploads"
 
