@@ -1,28 +1,19 @@
 # dropbox-to-gcs
 
-Back up my whole Dropbox to Google Cloud Storage.
+Back up my whole Dropbox to Google Cloud Storage using Dropbox webhooks.
 
 ## Why?
 
 Some existential worry that Dropbox could blow up someday, but also it's [relatively cheap](https://cloud.google.com/storage/pricing#price-tables) to store data in the Archive storage class (I have about 400 GB, so should be about $0.48/month).
 
-## Steps
+## Prerequisites
 
-Due to weirdness with the Dropbox API, this ended up as sort of a hodge-podge. The API to list all of your Dropbox files is extremely slow due to having to page through all the results, so I instead relied on the list of Dropbox files as they appear on the sync to my Mac.
+Make a [Dropbox app](https://www.dropbox.com/developers/apps). You will only need to process your own files, so it can stay in Development status.
 
-1. Link your Dropbox file list [to your Mac or PC](https://www.dropbox.com/desktop). Dropbox will display all of your files in your computer's folder structure through placeholders, without actually taking up space on your hard drive.
+## Functions
 
-2. Make a [Dropbox app](https://www.dropbox.com/developers/apps). You will only need to process your own files, so it can stay in Development status.
+This process is split into three Google Cloud Functions, each with a folder in the repo root:
 
-3. Run the queueing script
-
-`poetry run python queue_files.py`
-This will compare the list of Dropbox files on my computer against a list of already-processed files in MySQL. It will write PubSub messages with the file names that still need to be processed, which a Cloud Function will pick up (see next section). Through trial and error, I found pushing 20 file names to the queue every second seems to get through the files mostly without any errors.
-
-4. The Cloud Function
-
-The Cloud Function is pretty simple: It reads the filename from the PubSub message, then it downloads that file from Dropbox and writes it to Google Cloud Storage. The Cloud Function is deployed via GitHub Actions in `.github/workflows/deploy.yml`.
-
-5. Troubleshoot
-
-Check the Cloud Function for errors. Most seem to be retriable, but `queue_files.py` occasionally needed to be adjusted to skip certain files (i.e. `.DS_Store`, `.dropbox`). Eventually, you should be able to run `queue_files.py` and it will report that there are 0 files to queue (i.e., you have loaded everything).
+1. `webhook` -- respond to Dropbox webhook. In your Dropbox app, set the webhook URL to the URL of this function.
+2. `queue_files` -- triggered by the previous job. Figure out the last cursor. Directly delete any files that have been deleted from Dropbox. For new files, queue them to the new job.
+3. `process_file` -- download the file from Dropbox and upload it to GCS.

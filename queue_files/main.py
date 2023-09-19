@@ -80,7 +80,7 @@ def run(event, context):
             future = publisher.publish(TOPIC_NAME, clean_name.encode("utf-8"))
             futures.append(future)
         elif isinstance(entry, dropbox.files.DeletedMetadata):
-            print(f"Deleting {entry.path_display}")
+            print(f"Deleting {clean_name}")
             query = "UPDATE dropbox SET status = 'deleted' WHERE desktop_path = %s"
             cursor = mysql_connection.cursor()
             cursor.execute(query, (clean_name,))
@@ -109,34 +109,25 @@ def refresh_token():
     response.raise_for_status()
     token = response.json()["access_token"]
 
-    # Add a new version
-    secret_version = secret_client.add_secret_version(
-        request={
-            "payload": {"data": token.encode("utf-8")},
-            "parent": ACCESS_TOKEN_SECRET_NAME,
-        }
-    )
-    secret_version_number: int = int(secret_version.name.split("/")[-1])
-    # Delete the old version
-    secret_client.destroy_secret_version(
-        request={
-            "name": f"{ACCESS_TOKEN_SECRET_NAME}/versions/{secret_version_number - 1}",
-        }
-    )
+    _set_secret(ACCESS_TOKEN_SECRET_NAME, token)
     return token
 
 
 def set_cursor_secret(cursor):
+    _set_secret(CURSOR_SECRET_NAME, cursor)
+
+
+def _set_secret(name, value):
     secret_version = secret_client.add_secret_version(
         request={
-            "payload": {"data": cursor.encode("utf-8")},
-            "parent": CURSOR_SECRET_NAME,
+            "payload": {"data": value.encode("utf-8")},
+            "parent": name,
         }
     )
     secret_version_number: int = int(secret_version.name.split("/")[-1])
     # Delete the old version
     secret_client.destroy_secret_version(
         request={
-            "name": f"{CURSOR_SECRET_NAME}/versions/{secret_version_number - 1}",
+            "name": f"{name}/versions/{secret_version_number - 1}",
         }
     )
