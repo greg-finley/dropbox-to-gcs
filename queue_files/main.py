@@ -23,7 +23,7 @@ def run(event, context):
     entries = []
     dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
     old_cursor = secret_client.access_secret_version(
-        request={"name": CURSOR_SECRET_NAME}
+        request={"name": f"{CURSOR_SECRET_NAME}/versions/latest"}
     ).payload.data.decode("utf-8")
 
     try:
