@@ -52,29 +52,29 @@ def run(event, context):
     futures = []
     for entry in entries:
         if isinstance(entry, dropbox.files.FileMetadata):
-            print(f"Queueing {entry.path_display}")
+            clean_name = entry.path_display.removeprefix("/")
+            print(f"Queueing {clean_name}")
             query = """
             INSERT INTO dropbox (desktop_path, filename, status)
             VALUES (%s, SUBSTRING_INDEX(%s, '/', -1), 'pending')
             """
             cursor = mysql_connection.cursor()
             try:
-                cursor.execute(query, (entry.path_display, entry.path_display))
+                cursor.execute(query, (clean_name, clean_name))
             # Maybe we already enqueued this file
             except mysql.connector.Error as err:
                 print(f"Failed to insert entry: {err}")
                 continue
             finally:
                 cursor.close()
-            future = publisher.publish(
-                TOPIC_NAME, entry.path_display.removeprefix("/").encode("utf-8")
-            )
+            future = publisher.publish(TOPIC_NAME, clean_name.encode("utf-8"))
             futures.append(future)
         # TODO: Handle deletes and handle moving from "Camera Uploads"
 
     for future in futures:
         future.result()
-    set_cursor_secret(result.cursor)
+    if result.cursor != os.getenv("DROPBOX_CURSOR"):
+        set_cursor_secret(result.cursor)
 
 
 def refresh_token():
