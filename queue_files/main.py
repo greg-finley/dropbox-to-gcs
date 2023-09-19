@@ -20,7 +20,9 @@ def run(event, context):
     try:
         thing = dbx.files_list_folder_continue(cursor=os.getenv("DROPBOX_CURSOR"))
     except dropbox.exceptions.AuthError as err:
-        refresh_token()
+        token = refresh_token()
+        os.environ["DROPBOX_ACCESS_TOKEN"] = token
+        dbx = dropbox.Dropbox(token)
         thing = dbx.files_list_folder_continue(cursor=os.getenv("DROPBOX_CURSOR"))
     print(thing)
 
@@ -53,3 +55,4 @@ def refresh_token():
             "name": f"{SECRET_NAME}/versions/{secret_version_number - 1}",
         }
     )
+    return token
