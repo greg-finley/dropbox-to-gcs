@@ -4,7 +4,7 @@ from time import sleep
 import dropbox
 import mysql.connector
 import requests
-from google.cloud import pubsub_v1, secretmanager
+from google.cloud import pubsub_v1, secretmanager, storage
 
 ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
 CURSOR_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_CURSOR"
@@ -53,6 +53,8 @@ def run(event, context):
     )
     mysql_connection.autocommit = True
     publisher = pubsub_v1.PublisherClient()
+    gcs_client = storage.Client()
+    gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
 
     futures = []
     for i, entry in enumerate(entries):
@@ -83,7 +85,10 @@ def run(event, context):
             cursor = mysql_connection.cursor()
             cursor.execute(query, (clean_name,))
             cursor.close()
-            dbx.files_delete_v2(entry.path_display)
+            try:
+                gcs_bucket.delete_blob(clean_name)
+            except Exception as err:
+                print(f"Failed to delete {clean_name}: {err}")
 
     for future in futures:
         future.result()
