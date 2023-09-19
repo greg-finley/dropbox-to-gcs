@@ -22,13 +22,17 @@ def run(event, context):
     """
     entries = []
     dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
+    old_cursor = secret_client.access_secret_version(
+        request={"name": CURSOR_SECRET_NAME}
+    ).payload.data.decode("utf-8")
+
     try:
-        result = dbx.files_list_folder_continue(cursor=os.getenv("DROPBOX_CURSOR"))
+        result = dbx.files_list_folder_continue(cursor=old_cursor)
     except dropbox.exceptions.AuthError:
         token = refresh_token()
         os.environ["DROPBOX_ACCESS_TOKEN"] = token
         dbx = dropbox.Dropbox(token)
-        result = dbx.files_list_folder_continue(cursor=os.getenv("DROPBOX_CURSOR"))
+        result = dbx.files_list_folder_continue(cursor=old_cursor)
 
     entries.extend(result.entries)
     while result.has_more:
@@ -73,7 +77,7 @@ def run(event, context):
 
     for future in futures:
         future.result()
-    if result.cursor != os.getenv("DROPBOX_CURSOR"):
+    if result.cursor != old_cursor:
         set_cursor_secret(result.cursor)
 
 
