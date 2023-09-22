@@ -1,3 +1,4 @@
+import json
 import os
 from time import sleep
 
@@ -10,11 +11,14 @@ ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 secret_client = secretmanager.SecretManagerServiceClient()
 
+mysql_config_str = os.environ["MYSQL_CONFIG"]
+mysql_config_dict = json.loads(mysql_config_str)
+
 mysql_connection = mysql.connector.connect(
-    host=os.getenv("MYSQL_HOST"),
-    user=os.getenv("MYSQL_USERNAME"),
-    passwd=os.getenv("MYSQL_PASSWORD"),
-    database=os.getenv("MYSQL_DATABASE"),
+    host=mysql_config_dict["MYSQL_HOST"],
+    user=mysql_config_dict["MYSQL_USERNAME"],
+    passwd=mysql_config_dict["MYSQL_PASSWORD"],
+    database=mysql_config_dict["MYSQL_DATABASE"],
     ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
 )
 mysql_connection.autocommit = True
