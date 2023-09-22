@@ -1,3 +1,4 @@
 .env
 .vscode
 file_list.txt
+gha-creds-*
