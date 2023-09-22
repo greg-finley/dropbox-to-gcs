@@ -7,9 +7,17 @@ import requests
 from google.cloud import pubsub_v1, secretmanager, storage
 
 ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
-CURSOR_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_CURSOR"
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 secret_client = secretmanager.SecretManagerServiceClient()
+
+mysql_connection = mysql.connector.connect(
+    host=os.getenv("MYSQL_HOST"),
+    user=os.getenv("MYSQL_USERNAME"),
+    passwd=os.getenv("MYSQL_PASSWORD"),
+    database=os.getenv("MYSQL_DATABASE"),
+    ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
+)
+mysql_connection.autocommit = True
 
 
 def run(event, context):
@@ -23,35 +31,29 @@ def run(event, context):
     """
     entries = []
     dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
-    old_cursor = secret_client.access_secret_version(
-        request={"name": f"{CURSOR_SECRET_NAME}/versions/latest"}
-    ).payload.data.decode("utf-8")
+    query = "SELECT dropbox_cursor FROM dropbox_cursor_table"
+    cursor = mysql_connection.cursor()
+    cursor.execute(query)
+    old_cursor = cursor.fetchone()[0]
+    cursor.close()
 
     try:
-        result = dbx.files_list_folder_continue(cursor=old_cursor)
+        dropbox_result = dbx.files_list_folder_continue(cursor=old_cursor)
     except dropbox.exceptions.AuthError:
         token = refresh_token()
         os.environ["DROPBOX_ACCESS_TOKEN"] = token
         dbx = dropbox.Dropbox(token)
-        result = dbx.files_list_folder_continue(cursor=old_cursor)
+        dropbox_result = dbx.files_list_folder_continue(cursor=old_cursor)
 
-    entries.extend(result.entries)
-    while result.has_more:
-        result = dbx.files_list_folder_continue(cursor=result.cursor)
-        entries.extend(result.entries)
+    entries.extend(dropbox_result.entries)
+    while dropbox_result.has_more:
+        dropbox_result = dbx.files_list_folder_continue(cursor=dropbox_result.cursor)
+        entries.extend(dropbox_result.entries)
 
     if not entries:
         print("No new files found")
         return
 
-    mysql_connection = mysql.connector.connect(
-        host=os.getenv("MYSQL_HOST"),
-        user=os.getenv("MYSQL_USERNAME"),
-        passwd=os.getenv("MYSQL_PASSWORD"),
-        database=os.getenv("MYSQL_DATABASE"),
-        ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
-    )
-    mysql_connection.autocommit = True
     publisher = pubsub_v1.PublisherClient()
     gcs_client = storage.Client()
     gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
@@ -72,12 +74,12 @@ def run(event, context):
             try:
                 cursor.execute(query, (clean_name, clean_name))
                 print(f"Queued {clean_name}")
+                cursor.close()
             # Maybe we already enqueued this file; continue instead of enqueueing again
             except mysql.connector.Error as err:
                 print(f"Failed to insert entry: {err}")
-                continue
-            finally:
                 cursor.close()
+                continue
             future = publisher.publish(TOPIC_NAME, clean_name.encode("utf-8"))
             futures.append(future)
         elif isinstance(entry, dropbox.files.DeletedMetadata):
@@ -93,8 +95,11 @@ def run(event, context):
 
     for future in futures:
         future.result()
-    if result.cursor != old_cursor:
-        set_cursor_secret(result.cursor)
+    if dropbox_result.cursor != old_cursor:
+        query = "UPDATE dropbox_cursor_table SET dropbox_cursor = %s"
+        cursor = mysql_connection.cursor()
+        cursor.execute(query, (dropbox_result.cursor,))
+        cursor.close()
 
 
 def refresh_token():
@@ -110,25 +115,17 @@ def refresh_token():
     response.raise_for_status()
     token = response.json()["access_token"]
 
-    _set_secret(ACCESS_TOKEN_SECRET_NAME, token)
-    return token
-
-
-def set_cursor_secret(cursor):
-    _set_secret(CURSOR_SECRET_NAME, cursor)
-
-
-def _set_secret(name, value):
     secret_version = secret_client.add_secret_version(
         request={
-            "payload": {"data": value.encode("utf-8")},
-            "parent": name,
+            "payload": {"data": token.encode("utf-8")},
+            "parent": ACCESS_TOKEN_SECRET_NAME,
         }
     )
     secret_version_number: int = int(secret_version.name.split("/")[-1])
     # Delete the old version
     secret_client.destroy_secret_version(
         request={
-            "name": f"{name}/versions/{secret_version_number - 1}",
+            "name": f"{ACCESS_TOKEN_SECRET_NAME}/versions/{secret_version_number - 1}",
         }
     )
+    return token
