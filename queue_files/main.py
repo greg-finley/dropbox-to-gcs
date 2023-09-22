@@ -11,14 +11,13 @@ ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 secret_client = secretmanager.SecretManagerServiceClient()
 
-mysql_config_str = os.environ["MYSQL_CONFIG"]
-mysql_config_dict = json.loads(mysql_config_str)
+mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
 
 mysql_connection = mysql.connector.connect(
-    host=mysql_config_dict["MYSQL_HOST"],
-    user=mysql_config_dict["MYSQL_USERNAME"],
-    passwd=mysql_config_dict["MYSQL_PASSWORD"],
-    database=mysql_config_dict["MYSQL_DATABASE"],
+    host=mysql_config["MYSQL_HOST"],
+    user=mysql_config["MYSQL_USERNAME"],
+    passwd=mysql_config["MYSQL_PASSWORD"],
+    database=mysql_config["MYSQL_DATABASE"],
     ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
 )
 mysql_connection.autocommit = True
@@ -107,13 +106,14 @@ def run(event, context):
 
 
 def refresh_token():
+    dropbox_config = json.loads(os.environ["DROPBOX_CONFIG"])
     response = requests.post(
         "https://api.dropbox.com/oauth2/token",
         data={
-            "refresh_token": os.environ["DROPBOX_REFRESH_TOKEN"],
             "grant_type": "refresh_token",
-            "client_id": os.environ["DROPBOX_CLIENT_ID"],
-            "client_secret": os.environ["DROPBOX_CLIENT_SECRET"],
+            "refresh_token": dropbox_config["DROPBOX_REFRESH_TOKEN"],
+            "client_id": dropbox_config["DROPBOX_CLIENT_ID"],
+            "client_secret": dropbox_config["DROPBOX_CLIENT_SECRET"],
         },
     )
     response.raise_for_status()
