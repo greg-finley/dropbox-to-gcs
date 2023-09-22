@@ -61,7 +61,7 @@ def run(event, context):
     futures = []
     for i, entry in enumerate(entries):
         # Every third item, sleep a bit
-        if i % 3 == 0:
+        if i % 3 == 0 and i != 0:
             sleep(1)
         clean_name = entry.path_display.removeprefix("/")
         if isinstance(entry, dropbox.files.FileMetadata):
