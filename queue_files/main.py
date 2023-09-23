@@ -41,6 +41,7 @@ def run(event, context):
     cursor.execute(query)
     old_cursor = cursor.fetchone()[0]
     print("Old cursor type: ", type(old_cursor))
+    print("Old cursor: ", old_cursor)
     cursor.close()
 
     try:
@@ -53,6 +54,8 @@ def run(event, context):
 
     # Immediately write the new cursor to the database so further requests use
     # it and cut down on duplicated work
+    print("New cursor type: ", type(dropbox_result.cursor))
+    print("New cursor: ", dropbox_result.cursor)
     query = "INSERT IGNORE INTO dropbox_cursors (dropbox_cursor) VALUES (%s)"
     cursor = mysql_connection.cursor()
     cursor.execute(query, (dropbox_result.cursor,))
