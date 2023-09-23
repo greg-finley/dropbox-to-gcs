@@ -71,6 +71,7 @@ def run(event, context):
 
     futures = []
     for i, entry in enumerate(dropbox_result.entries):
+        print(entry)
         # Every third item, sleep a bit
         if i % 3 == 0 and i != 0:
             sleep(1)
