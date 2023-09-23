@@ -40,6 +40,7 @@ def run(event, context):
     cursor = mysql_connection.cursor()
     cursor.execute(query)
     old_cursor = cursor.fetchone()[0]
+    print("Old cursor type: ", type(old_cursor))
     cursor.close()
 
     try:
