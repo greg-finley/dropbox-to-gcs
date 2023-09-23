@@ -52,6 +52,10 @@ def run(event, context):
         dbx = dropbox.Dropbox(token)
         dropbox_result = dbx.files_list_folder_continue(cursor=old_cursor)
 
+    if not dropbox_result.entries:
+        print("No new files found")
+        return
+
     # Immediately write the new cursor to the database so further requests use
     # it and cut down on duplicated work
     print("New cursor type: ", type(dropbox_result.cursor))
@@ -60,10 +64,6 @@ def run(event, context):
     cursor = mysql_connection.cursor()
     cursor.execute(query, (dropbox_result.cursor,))
     cursor.close()
-
-    if not dropbox_result.entries:
-        print("No new files found")
-        return
 
     publisher = pubsub_v1.PublisherClient()
     gcs_client = storage.Client()
