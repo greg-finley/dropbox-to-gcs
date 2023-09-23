@@ -9,6 +9,7 @@ from google.cloud import pubsub_v1, secretmanager, storage
 
 ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
+QUEUE_TOPIC_NAME = "projects/greg-finley/topics/dropbox-queue-files"
 secret_client = secretmanager.SecretManagerServiceClient()
 
 mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
@@ -32,9 +33,10 @@ def run(event, context):
         Response object using
         `make_response <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>`.
     """
-    entries = []
     dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
-    query = "SELECT dropbox_cursor FROM dropbox_cursor_table"
+    query = (
+        "SELECT dropbox_cursor from dropbox_cursors order by created_at desc limit 1"
+    )
     cursor = mysql_connection.cursor()
     cursor.execute(query)
     old_cursor = cursor.fetchone()[0]
@@ -48,12 +50,14 @@ def run(event, context):
         dbx = dropbox.Dropbox(token)
         dropbox_result = dbx.files_list_folder_continue(cursor=old_cursor)
 
-    entries.extend(dropbox_result.entries)
-    while dropbox_result.has_more:
-        dropbox_result = dbx.files_list_folder_continue(cursor=dropbox_result.cursor)
-        entries.extend(dropbox_result.entries)
+    # Immediately write the new cursor to the database so further requests use
+    # it and cut down on duplicated work
+    query = "INSERT IGNORE INTO dropbox_cursors (dropbox_cursor) VALUES (%s)"
+    cursor = mysql_connection.cursor()
+    cursor.execute(query, (dropbox_result.cursor,))
+    cursor.close()
 
-    if not entries:
+    if not dropbox_result.entries:
         print("No new files found")
         return
 
@@ -62,7 +66,7 @@ def run(event, context):
     gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
 
     futures = []
-    for i, entry in enumerate(entries):
+    for i, entry in enumerate(dropbox_result.entries):
         # Every third item, sleep a bit
         if i % 3 == 0 and i != 0:
             sleep(1)
@@ -98,11 +102,10 @@ def run(event, context):
 
     for future in futures:
         future.result()
-    if dropbox_result.cursor != old_cursor:
-        query = "UPDATE dropbox_cursor_table SET dropbox_cursor = %s"
-        cursor = mysql_connection.cursor()
-        cursor.execute(query, (dropbox_result.cursor,))
-        cursor.close()
+
+    # Trigger the job again if there are more files to process
+    if dropbox_result.has_more:
+        publisher.publish(QUEUE_TOPIC_NAME, "Hi".encode("utf-8"))
 
 
 def refresh_token():
