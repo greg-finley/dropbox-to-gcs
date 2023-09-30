@@ -2,10 +2,14 @@ import json
 import os
 from time import sleep
 
+import dropbox
 import mysql.connector
-from google.cloud import pubsub_v1
+import requests
+from flask import Response
+from google.cloud import pubsub_v1, secretmanager
 
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
+ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
 
 mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
 
@@ -17,6 +21,7 @@ mysql_connection = mysql.connector.connect(
     ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
 )
 mysql_connection.autocommit = True
+secret_client = secretmanager.SecretManagerServiceClient()
 
 
 def run(request):
@@ -25,6 +30,13 @@ def run(request):
     cursor.execute(query)
     desktop_paths = [row[0] for row in cursor.fetchall()]
     cursor.close()
+
+    dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
+
+    try:
+        dbx.files_list_folder_continue(cursor=old_cursor)
+    except dropbox.exceptions.AuthError:
+        refresh_token()
 
     publisher = pubsub_v1.PublisherClient()
 
@@ -39,3 +51,39 @@ def run(request):
 
     for future in futures:
         future.result()
+
+    resp = Response("OK")
+    resp.headers["Content-Type"] = "text/plain"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
+
+
+# TODO: Make this shared between this job and the regular queueing job at some point
+def refresh_token():
+    dropbox_config = json.loads(os.environ["DROPBOX_CONFIG"])
+    response = requests.post(
+        "https://api.dropbox.com/oauth2/token",
+        data={
+            "grant_type": "refresh_token",
+            "refresh_token": dropbox_config["DROPBOX_REFRESH_TOKEN"],
+            "client_id": dropbox_config["DROPBOX_CLIENT_ID"],
+            "client_secret": dropbox_config["DROPBOX_CLIENT_SECRET"],
+        },
+    )
+    response.raise_for_status()
+    token = response.json()["access_token"]
+
+    secret_version = secret_client.add_secret_version(
+        request={
+            "payload": {"data": token.encode("utf-8")},
+            "parent": ACCESS_TOKEN_SECRET_NAME,
+        }
+    )
+    secret_version_number: int = int(secret_version.name.split("/")[-1])
+    # Delete the old version
+    secret_client.destroy_secret_version(
+        request={
+            "name": f"{ACCESS_TOKEN_SECRET_NAME}/versions/{secret_version_number - 1}",
+        }
+    )
+    return token
