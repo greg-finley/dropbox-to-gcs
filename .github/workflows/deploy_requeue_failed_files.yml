@@ -1,0 +1,38 @@
+name: deploy_requeue_failed_files
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - queue_files/main.py
+      - queue_files/requirements.txt
+      - .github/workflows/deploy_requeue_failed_files.yml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v1"
+        with:
+          credentials_json: "${{ secrets.gcp_credentials }}"
+
+      - id: "deploy"
+        uses: "google-github-actions/deploy-cloud-functions@v1"
+        with:
+          name: "projects/greg-finley/locations/us-west1/functions/dropbox-queue-files"
+          runtime: "python310"
+          entry_point: "run"
+          source_dir: "requeue_failed_files"
+          memory_mb: 256
+          secret_environment_variables: "MYSQL_CONFIG=projects/greg-finley/secrets/MYSQL_CONFIG/versions/latest"
+          timeout: 540
+          min_instances: 0
+          max_instances: 1

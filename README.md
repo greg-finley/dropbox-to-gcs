@@ -17,3 +17,4 @@ This process is split into three Google Cloud Functions, each with a folder in t
 1. `webhook` -- respond to Dropbox webhook. In your Dropbox app, set the webhook URL to the URL of this function.
 2. `queue_files` -- triggered by the previous job. Figure out the last cursor. Directly delete any files that have been deleted from Dropbox. For new files, queue them to the new job.
 3. `process_file` -- download the file from Dropbox and upload it to GCS.
+4. `deploy_requeue_failed_files` -- can be manually triggered to requeue files that failed to process.
