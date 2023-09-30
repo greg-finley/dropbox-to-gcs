@@ -27,7 +27,7 @@ jobs:
       - id: "deploy"
         uses: "google-github-actions/deploy-cloud-functions@v1"
         with:
-          name: "projects/greg-finley/locations/us-west1/functions/dropbox-queue-files"
+          name: "projects/greg-finley/locations/us-west1/functions/dropbox-requeue-failed-files"
           runtime: "python310"
           entry_point: "run"
           source_dir: "requeue_failed_files"
