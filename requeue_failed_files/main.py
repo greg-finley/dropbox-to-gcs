@@ -34,7 +34,7 @@ def run(request):
     dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
 
     try:
-        dbx.files_list_folder_continue(cursor=old_cursor)
+        dbx.files_list_folder("/")
     except dropbox.exceptions.AuthError:
         refresh_token()
 
