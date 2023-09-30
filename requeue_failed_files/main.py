@@ -19,7 +19,7 @@ mysql_connection = mysql.connector.connect(
 mysql_connection.autocommit = True
 
 
-def run(event, context):
+def run(request):
     query = "SELECT desktop_path from dropbox where status  = 'pending';"
     cursor = mysql_connection.cursor()
     cursor.execute(query)
