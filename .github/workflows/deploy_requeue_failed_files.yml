@@ -4,8 +4,8 @@ on:
     branches:
       - main
     paths:
-      - queue_files/main.py
-      - queue_files/requirements.txt
+      - requeue_failed_files/main.py
+      - requeue_failed_files/requirements.txt
       - .github/workflows/deploy_requeue_failed_files.yml
 jobs:
   deploy:
