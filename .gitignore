@@ -2,3 +2,4 @@
 .vscode
 file_list.txt
 gha-creds-*
+.mypy_cache/
