@@ -25,18 +25,18 @@ secret_client = secretmanager.SecretManagerServiceClient()
 
 
 def run(request):
-    query = "SELECT desktop_path from dropbox where status  = 'pending';"
-    cursor = mysql_connection.cursor()
-    cursor.execute(query)
-    desktop_paths = [row[0] for row in cursor.fetchall()]
-    cursor.close()
-
     dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
 
     try:
         dbx.files_list_folder("")
     except dropbox.exceptions.AuthError:
         refresh_token()
+
+    query = "SELECT desktop_path from dropbox where status  = 'pending';"
+    cursor = mysql_connection.cursor()
+    cursor.execute(query)
+    desktop_paths = [row[0] for row in cursor.fetchall()]
+    cursor.close()
 
     publisher = pubsub_v1.PublisherClient()
 
