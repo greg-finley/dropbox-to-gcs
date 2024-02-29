@@ -28,7 +28,7 @@ jobs:
         uses: "google-github-actions/deploy-cloud-functions@v1"
         with:
           name: "projects/greg-finley/locations/us-west1/functions/dropbox-webhook"
-          runtime: "python311"
+          runtime: "python312"
           entry_point: "run"
           source_dir: "webhook"
           memory_mb: 128
