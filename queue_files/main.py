@@ -15,11 +15,10 @@ secret_client = secretmanager.SecretManagerServiceClient()
 mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
 
 mysql_connection = mysql.connector.connect(
-    host=mysql_config["MYSQL_HOST"],
+    unix_socket=mysql_config["MYSQL_SOCKET"],
     user=mysql_config["MYSQL_USERNAME"],
     passwd=mysql_config["MYSQL_PASSWORD"],
     database=mysql_config["MYSQL_DATABASE"],
-    ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
 )
 mysql_connection.autocommit = True
 

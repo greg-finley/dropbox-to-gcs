@@ -13,11 +13,10 @@ mysql_config_str = os.environ["MYSQL_CONFIG"]
 mysql_config_dict = json.loads(mysql_config_str)
 
 mysql_connection = mysql.connector.connect(
-    host=mysql_config_dict["MYSQL_HOST"],
+    unix_socket=mysql_config["MYSQL_SOCKET"],
     user=mysql_config_dict["MYSQL_USERNAME"],
     passwd=mysql_config_dict["MYSQL_PASSWORD"],
     database=mysql_config_dict["MYSQL_DATABASE"],
-    ssl_ca=os.environ.get("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt"),
 )
 mysql_connection.autocommit = True
 
