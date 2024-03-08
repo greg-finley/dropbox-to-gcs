@@ -14,7 +14,8 @@ ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
 mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
 
 mysql_connection = mysql.connector.connect(
-    unix_socket=mysql_config["MYSQL_SOCKET"],
+    host=mysql_config["MYSQL_HOST"],
+    port=mysql_config["MYSQL_PORT"],
     user=mysql_config["MYSQL_USERNAME"],
     passwd=mysql_config["MYSQL_PASSWORD"],
     database=mysql_config["MYSQL_DATABASE"],
