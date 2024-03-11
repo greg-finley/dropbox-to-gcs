@@ -28,7 +28,9 @@ def run(event, context):
     dropbox_file = dbx.files_download("/" + filename)
     content_type = dropbox_file[1].headers.get("Content-Type")
     gcs_file = gcs_bucket.blob(filename)
-    gcs_file.upload_from_string(dropbox_file[1].content, content_type=content_type)
+    gcs_file.upload_from_string(
+        dropbox_file[1].content, content_type=content_type, timeout=400
+    )
     query = """
     INSERT INTO dropbox (desktop_path, filename, status)
     VALUES (%s, SUBSTRING_INDEX(%s, '/', -1), 'done')

@@ -33,7 +33,7 @@ jobs:
           source_dir: "process_file"
           memory_mb: 4096
           secret_environment_variables: "MYSQL_CONFIG=projects/greg-finley/secrets/MYSQL_CONFIG/versions/latest,DROPBOX_ACCESS_TOKEN=projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest"
-          timeout: 120
+          timeout: 540
           event_trigger_type: "providers/cloud.pubsub/eventTypes/topic.publish"
           event_trigger_resource: "projects/greg-finley/topics/dropbox-backup"
           event_trigger_service: "pubsub.googleapis.com"
