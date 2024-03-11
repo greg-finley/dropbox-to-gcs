@@ -7,8 +7,9 @@ CREATE TABLE "dropbox" (
   PRIMARY KEY ("id"),
   UNIQUE KEY "desktop_path" ("desktop_path"),
   KEY "filename_index" ("filename"),
-  KEY "status_index" ("status")
-);
+  KEY "status_index" ("status"),
+  KEY "created_at_desc_idx" ("created_at" DESC)
+)
 
 CREATE TABLE "dropbox_cursors" (
   "id" int NOT NULL AUTO_INCREMENT,
