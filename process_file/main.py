@@ -4,13 +4,18 @@ import os
 
 import dropbox
 import mysql.connector
-from google.cloud import storage
+from google.cloud import secretmanager, storage
 
-dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
 gcs_client = storage.Client()
 gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
 mysql_config_str = os.environ["MYSQL_CONFIG"]
 mysql_config_dict = json.loads(mysql_config_str)
+secret_client = secretmanager.SecretManagerServiceClient()
+dropbox_access_token = secret_client.access_secret_version(
+    name="projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest"
+).payload.data.decode("utf-8")
+dbx = dropbox.Dropbox(dropbox_access_token)
+
 
 mysql_connection = mysql.connector.connect(
     host=mysql_config_dict["MYSQL_HOST"],
