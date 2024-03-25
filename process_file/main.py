@@ -18,8 +18,7 @@ dbx = dropbox.Dropbox(dropbox_access_token)
 
 
 mysql_connection = mysql.connector.connect(
-    host=mysql_config_dict["MYSQL_HOST"],
-    port=mysql_config_dict["MYSQL_PORT"],
+    unix_socket=mysql_config_dict["MYSQL_SOCKET"],
     user=mysql_config_dict["MYSQL_USERNAME"],
     passwd=mysql_config_dict["MYSQL_PASSWORD"],
     database=mysql_config_dict["MYSQL_DATABASE"],

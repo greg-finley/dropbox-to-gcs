@@ -15,8 +15,7 @@ secret_client = secretmanager.SecretManagerServiceClient()
 mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
 
 mysql_connection = mysql.connector.connect(
-    host=mysql_config["MYSQL_HOST"],
-    port=mysql_config["MYSQL_PORT"],
+    unix_socket=mysql_config["MYSQL_SOCKET"],
     user=mysql_config["MYSQL_USERNAME"],
     passwd=mysql_config["MYSQL_PASSWORD"],
     database=mysql_config["MYSQL_DATABASE"],
