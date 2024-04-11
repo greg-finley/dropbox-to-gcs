@@ -39,7 +39,7 @@ def run(event, context):
     # Immediately write the new cursor to the database so further requests use
     # it and cut down on duplicated work
     print("New cursor: ", dropbox_result.cursor)
-    query = "INSERT INTO dropbox_cursors (dropbox_cursor) VALUES (%s) ON CONFLICT (dropbox_cursor) DO NOTHING"
+    query = "INSERT INTO dropbox_cursors (dropbox_cursor) VALUES (%s)"
     with conn.cursor() as cursor:
         cursor.execute(query, (dropbox_result.cursor,))
 
