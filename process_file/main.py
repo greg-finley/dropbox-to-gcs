@@ -25,8 +25,8 @@ def run(event, context):
     )
     query = """
     INSERT INTO dropbox (desktop_path, filename, status)
-    VALUES (%s, SUBSTRING_INDEX(%s, '/', -1), 'done')
-    ON DUPLICATE KEY UPDATE status = 'done'
+    VALUES (%s, SPLIT_PART(%s, '/', -1), 'done')
+    ON CONFLICT (desktop_path) DO UPDATE SET status = 'done'
     """
     with psycopg.connect(os.environ["NEON_DATABASE_URL"]) as conn:
         with conn.cursor() as cursor:

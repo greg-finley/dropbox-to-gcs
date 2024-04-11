@@ -58,7 +58,7 @@ def run(event, context):
             print(f"Queueing {clean_name}")
             query = """
             INSERT INTO dropbox (desktop_path, filename, status)
-            VALUES (%s, SUBSTRING_INDEX(%s, '/', -1), 'pending')
+            VALUES (%s, SPLIT_PART(%s, '/', -1), 'pending')
             ON CONFLICT (desktop_path) DO NOTHING
             """
             with conn.cursor() as cursor:
