@@ -32,7 +32,7 @@ jobs:
           entry_point: "run"
           source_dir: "queue_files"
           memory_mb: 256
-          secret_environment_variables: "MYSQL_CONFIG=projects/greg-finley/secrets/MYSQL_CONFIG/versions/latest,DROPBOX_ACCESS_TOKEN=projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest,DROPBOX_CONFIG=projects/greg-finley/secrets/DROPBOX_CONFIG/versions/latest"
+          secret_environment_variables: "NEON_DATABASE_URL=projects/greg-finley/secrets/NEON_DATABASE_URL/versions/latest,DROPBOX_ACCESS_TOKEN=projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest,DROPBOX_CONFIG=projects/greg-finley/secrets/DROPBOX_CONFIG/versions/latest"
           timeout: 540
           event_trigger_type: "providers/cloud.pubsub/eventTypes/topic.publish"
           event_trigger_resource: "projects/greg-finley/topics/dropbox-queue-files"

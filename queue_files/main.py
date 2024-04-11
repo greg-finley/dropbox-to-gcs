@@ -3,7 +3,7 @@ import os
 from time import sleep
 
 import dropbox
-import mysql.connector
+import psycopg
 import requests
 from google.cloud import pubsub_v1, secretmanager, storage
 
@@ -12,35 +12,17 @@ TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 QUEUE_TOPIC_NAME = "projects/greg-finley/topics/dropbox-queue-files"
 secret_client = secretmanager.SecretManagerServiceClient()
 
-mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
-
-mysql_connection = mysql.connector.connect(
-    unix_socket=mysql_config["MYSQL_SOCKET"],
-    user=mysql_config["MYSQL_USERNAME"],
-    passwd=mysql_config["MYSQL_PASSWORD"],
-    database=mysql_config["MYSQL_DATABASE"],
-)
-mysql_connection.autocommit = True
-
 
 def run(event, context):
-    """Responds to any HTTP request.
-    Args:
-        request (flask.Request): HTTP request object.
-    Returns:
-        The response text or any set of values that can be turned into a
-        Response object using
-        `make_response <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>`.
-    """
     dbx = dropbox.Dropbox(os.getenv("DROPBOX_ACCESS_TOKEN"))
     query = (
         "SELECT dropbox_cursor from dropbox_cursors order by created_at desc limit 1"
     )
-    cursor = mysql_connection.cursor()
-    cursor.execute(query)
-    old_cursor = cursor.fetchone()[0]
-    print("Old cursor: ", old_cursor)
-    cursor.close()
+    conn = psycopg.connect(os.environ["NEON_DATABASE_URL"])
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        old_cursor = cursor.fetchone()[0]
+        print("Old cursor: ", old_cursor)
 
     try:
         dropbox_result = dbx.files_list_folder_continue(cursor=old_cursor)
@@ -57,10 +39,9 @@ def run(event, context):
     # Immediately write the new cursor to the database so further requests use
     # it and cut down on duplicated work
     print("New cursor: ", dropbox_result.cursor)
-    query = "INSERT IGNORE INTO dropbox_cursors (dropbox_cursor) VALUES (%s)"
-    cursor = mysql_connection.cursor()
-    cursor.execute(query, (dropbox_result.cursor,))
-    cursor.close()
+    query = "INSERT INTO dropbox_cursors (dropbox_cursor) VALUES (%s) ON CONFLICT (dropbox_cursor) DO NOTHING"
+    with conn.cursor() as cursor:
+        cursor.execute(query, (dropbox_result.cursor,))
 
     publisher = pubsub_v1.PublisherClient()
     gcs_client = storage.Client()
@@ -78,25 +59,20 @@ def run(event, context):
             query = """
             INSERT INTO dropbox (desktop_path, filename, status)
             VALUES (%s, SUBSTRING_INDEX(%s, '/', -1), 'pending')
+            ON CONFLICT (desktop_path) DO NOTHING
             """
-            cursor = mysql_connection.cursor()
-            try:
+            with conn.cursor() as cursor:
                 cursor.execute(query, (clean_name, clean_name))
                 print(f"Queued {clean_name}")
-                cursor.close()
-            # Maybe we already enqueued this file; continue instead of enqueueing again
-            except mysql.connector.Error as err:
-                print(f"Failed to insert entry: {err}")
-                cursor.close()
-                continue
+
             future = publisher.publish(TOPIC_NAME, clean_name.encode("utf-8"))
             futures.append(future)
         elif isinstance(entry, dropbox.files.DeletedMetadata):
             print(f"Deleting {clean_name}")
             query = "UPDATE dropbox SET status = 'deleted' WHERE desktop_path = %s"
-            cursor = mysql_connection.cursor()
-            cursor.execute(query, (clean_name,))
-            cursor.close()
+            with conn.cursor() as cursor:
+                cursor.execute(query, (clean_name,))
+
             try:
                 gcs_bucket.delete_blob(clean_name)
             except Exception as err:
@@ -108,6 +84,8 @@ def run(event, context):
     # Trigger the job again if there are more files to process
     if dropbox_result.has_more:
         publisher.publish(QUEUE_TOPIC_NAME, "Hi".encode("utf-8"))
+
+    conn.close()
 
 
 def refresh_token():

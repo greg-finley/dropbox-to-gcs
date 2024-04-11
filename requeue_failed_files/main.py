@@ -3,7 +3,7 @@ import os
 from time import sleep
 
 import dropbox
-import mysql.connector
+import psycopg
 import requests
 from flask import Response
 from google.cloud import pubsub_v1, secretmanager
@@ -11,15 +11,6 @@ from google.cloud import pubsub_v1, secretmanager
 TOPIC_NAME = "projects/greg-finley/topics/dropbox-backup"
 ACCESS_TOKEN_SECRET_NAME = "projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN"
 
-mysql_config = json.loads(os.environ["MYSQL_CONFIG"])
-
-mysql_connection = mysql.connector.connect(
-    unix_socket=mysql_config["MYSQL_SOCKET"],
-    user=mysql_config["MYSQL_USERNAME"],
-    passwd=mysql_config["MYSQL_PASSWORD"],
-    database=mysql_config["MYSQL_DATABASE"],
-)
-mysql_connection.autocommit = True
 secret_client = secretmanager.SecretManagerServiceClient()
 
 
@@ -31,11 +22,10 @@ def run(request):
     except dropbox.exceptions.AuthError:
         refresh_token()
 
-    query = "SELECT desktop_path from dropbox where status  = 'pending';"
-    cursor = mysql_connection.cursor()
-    cursor.execute(query)
-    desktop_paths = [row[0] for row in cursor.fetchall()]
-    cursor.close()
+    with psycopg.connect(os.environ["NEON_DATABASE_URL"]) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT desktop_path from dropbox where status = 'pending';")
+            desktop_paths = [row[0] for row in cursor.fetchall()]
 
     publisher = pubsub_v1.PublisherClient()
 

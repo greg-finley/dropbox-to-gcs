@@ -1,25 +1,13 @@
 import base64
-import json
 import os
 
 import dropbox
-import mysql.connector
+import psycopg
 from google.cloud import secretmanager, storage
 
 gcs_client = storage.Client()
 gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
-mysql_config_str = os.environ["MYSQL_CONFIG"]
-mysql_config_dict = json.loads(mysql_config_str)
 secret_client = secretmanager.SecretManagerServiceClient()
-
-
-mysql_connection = mysql.connector.connect(
-    unix_socket=mysql_config_dict["MYSQL_SOCKET"],
-    user=mysql_config_dict["MYSQL_USERNAME"],
-    passwd=mysql_config_dict["MYSQL_PASSWORD"],
-    database=mysql_config_dict["MYSQL_DATABASE"],
-)
-mysql_connection.autocommit = True
 
 
 def run(event, context):
@@ -40,7 +28,7 @@ def run(event, context):
     VALUES (%s, SUBSTRING_INDEX(%s, '/', -1), 'done')
     ON DUPLICATE KEY UPDATE status = 'done'
     """
-    cursor = mysql_connection.cursor()
-    cursor.execute(query, (filename, filename))
-    cursor.close()
+    with psycopg.connect(os.environ["NEON_DATABASE_URL"]) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query, (filename, filename))
     print(f"Uploaded {filename} - {content_type}")
