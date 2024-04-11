@@ -19,6 +19,7 @@ def run(event, context):
         "SELECT dropbox_cursor from dropbox_cursors order by created_at desc limit 1"
     )
     conn = psycopg.connect(os.environ["NEON_DATABASE_URL"])
+    conn.autocommit = True
     with conn.cursor() as cursor:
         cursor.execute(query)
         old_cursor = cursor.fetchone()[0]
