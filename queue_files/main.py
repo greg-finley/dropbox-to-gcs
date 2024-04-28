@@ -1,6 +1,5 @@
 import json
 import os
-from time import sleep
 
 import dropbox
 import psycopg
@@ -51,9 +50,6 @@ def run(event, context):
     futures = []
     for i, entry in enumerate(dropbox_result.entries):
         print(entry)
-        # Every third item, sleep a bit
-        if i % 3 == 0 and i != 0:
-            sleep(1)
         clean_name = entry.path_display.removeprefix("/")
         if isinstance(entry, dropbox.files.FileMetadata):
             print(f"Queueing {clean_name}")

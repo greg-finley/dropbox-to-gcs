@@ -1,6 +1,5 @@
 import json
 import os
-from time import sleep
 
 import dropbox
 import psycopg
@@ -32,9 +31,6 @@ def run(request):
     futures = []
     for i, path in enumerate(desktop_paths):
         print(path)
-        # Every third item, sleep a bit
-        if i % 3 == 0 and i != 0:
-            sleep(1)
         future = publisher.publish(TOPIC_NAME, path.encode("utf-8"))
         futures.append(future)
 
