@@ -48,7 +48,7 @@ def run(event, context):
     gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
 
     futures = []
-    for i, entry in enumerate(dropbox_result.entries):
+    for entry in dropbox_result.entries:
         print(entry)
         clean_name = entry.path_display.removeprefix("/")
         if isinstance(entry, dropbox.files.FileMetadata):
@@ -56,12 +56,15 @@ def run(event, context):
             query = """
             INSERT INTO dropbox (desktop_path, filename, status)
             VALUES (%s, SPLIT_PART(%s, '/', -1), 'pending')
-            ON CONFLICT (desktop_path) DO NOTHING
             """
             with conn.cursor() as cursor:
-                cursor.execute(query, (clean_name, clean_name))
-                print(f"Queued {clean_name}")
+                try:
+                    cursor.execute(query, (clean_name, clean_name))
+                except psycopg.errors.UniqueViolation as err:
+                    print(f"Already queued {clean_name}")
+                    continue
 
+            print(f"Queued {clean_name}")
             future = publisher.publish(TOPIC_NAME, clean_name.encode("utf-8"))
             futures.append(future)
         elif isinstance(entry, dropbox.files.DeletedMetadata):

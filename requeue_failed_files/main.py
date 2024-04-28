@@ -29,7 +29,7 @@ def run(request):
     publisher = pubsub_v1.PublisherClient()
 
     futures = []
-    for i, path in enumerate(desktop_paths):
+    for path in desktop_paths:
         print(path)
         future = publisher.publish(TOPIC_NAME, path.encode("utf-8"))
         futures.append(future)
