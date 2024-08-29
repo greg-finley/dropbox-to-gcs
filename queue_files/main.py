@@ -78,6 +78,27 @@ def run(event, context):
             except Exception as err:
                 print(f"Failed to delete {clean_name}: {err}")
 
+    # also reenque all failed files
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT id, desktop_path 
+            FROM dropbox 
+            WHERE status = 'failed'
+            FOR UPDATE SKIP LOCKED
+            """
+        )
+        failed_entries = cursor.fetchall()
+
+        if failed_entries:
+            for entry_id, clean_name in failed_entries:
+                future = publisher.publish(TOPIC_NAME, clean_name.encode("utf-8"))
+                futures.append(future)
+                cursor.execute(
+                    "UPDATE dropbox SET status = 'pending' WHERE id = %s", (entry_id,)
+                )
+                print(f"Re-queued {clean_name}")
+
     for future in futures:
         future.result()
 
