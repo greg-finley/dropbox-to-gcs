@@ -102,6 +102,20 @@ def run(event, context):
     if dropbox_result.has_more:
         publisher.publish(QUEUE_TOPIC_NAME, "Hi".encode("utf-8"))
 
+    # Delete all but the newest cursor
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            DELETE FROM dropbox_cursors
+            WHERE dropbox_cursor NOT IN (
+                SELECT dropbox_cursor
+                FROM dropbox_cursors
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
+            """
+        )
+
     conn.close()
 
 
