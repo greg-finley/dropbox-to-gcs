@@ -111,7 +111,6 @@ def run(event, context):
                 SELECT MAX(created_at)
                 FROM dropbox_cursors
             );
-            )
             """
         )
 
