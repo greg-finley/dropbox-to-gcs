@@ -102,16 +102,15 @@ def run(event, context):
     if dropbox_result.has_more:
         publisher.publish(QUEUE_TOPIC_NAME, "Hi".encode("utf-8"))
 
-    # Delete all but the newest cursor
+    # Delete cursors older than the most recent one (ok if new writes come in while this is running)
     with conn.cursor() as cursor:
         cursor.execute(
             """
             DELETE FROM dropbox_cursors
-            WHERE dropbox_cursor NOT IN (
-                SELECT dropbox_cursor
+            WHERE created_at < (
+                SELECT MAX(created_at)
                 FROM dropbox_cursors
-                ORDER BY created_at DESC
-                LIMIT 1
+            );
             )
             """
         )
