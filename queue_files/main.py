@@ -74,13 +74,14 @@ def run(event, context):
             except Exception as err:
                 print(f"Failed to delete {clean_name}: {err}")
 
-    # also reenque all failed files
+    # also reenque all failed files or queued a long time ago
     with conn.cursor() as cursor:
         cursor.execute(
             """
             SELECT id, desktop_path 
             FROM dropbox 
             WHERE status = 'failed'
+            OR (status = 'pending' AND created_at < CURRENT_TIMESTAMP - INTERVAL '1 hour')
             FOR UPDATE SKIP LOCKED
             """
         )
