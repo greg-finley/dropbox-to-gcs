@@ -9,8 +9,11 @@ gcs_client = storage.Client()
 gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
 secret_client = secretmanager.SecretManagerServiceClient()
 
-conn = psycopg.connect(os.environ["NEON_DATABASE_URL"])
-conn.autocommit = True
+
+def get_db_connection():
+    conn = psycopg.connect(os.environ["NEON_DATABASE_URL"])
+    conn.autocommit = True
+    return conn
 
 
 def run(event, context):
@@ -44,5 +47,6 @@ def update_status(filename, status):
     VALUES (%s, SPLIT_PART(%s, '/', -1), %s)
     ON CONFLICT (desktop_path) DO UPDATE SET status = %s
     """
-    with conn.cursor() as cursor:
-        cursor.execute(query, (filename, filename, status, status))
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query, (filename, filename, status, status))
