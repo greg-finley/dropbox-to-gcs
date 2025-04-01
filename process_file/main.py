@@ -5,9 +5,9 @@ import dropbox
 import psycopg
 from google.cloud import secretmanager, storage
 
+secret_client = secretmanager.SecretManagerServiceClient()
 gcs_client = storage.Client()
 gcs_bucket = gcs_client.get_bucket("greg-finley-dropbox-backup")
-secret_client = secretmanager.SecretManagerServiceClient()
 
 
 def get_db_connection():
