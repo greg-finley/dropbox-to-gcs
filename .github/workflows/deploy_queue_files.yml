@@ -25,17 +25,16 @@ jobs:
           credentials_json: "${{ secrets.gcp_credentials }}"
 
       - id: "deploy"
-        uses: "google-github-actions/deploy-cloud-functions@v1"
+        uses: "google-github-actions/deploy-cloud-functions@v4"
         with:
-          name: "projects/greg-finley/locations/us-west1/functions/dropbox-queue-files"
+          name: "dropbox-queue-files"
+          region: "us-west1"
           runtime: "python310"
           entry_point: "run"
           source_dir: "queue_files"
-          memory_mb: 256
-          secret_environment_variables: "NEON_DATABASE_URL=projects/greg-finley/secrets/NEON_DATABASE_URL/versions/latest,DROPBOX_ACCESS_TOKEN=projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest,DROPBOX_CONFIG=projects/greg-finley/secrets/DROPBOX_CONFIG/versions/latest"
-          timeout: 540
-          event_trigger_type: "providers/cloud.pubsub/eventTypes/topic.publish"
-          event_trigger_resource: "projects/greg-finley/topics/dropbox-queue-files"
-          event_trigger_service: "pubsub.googleapis.com"
-          min_instances: 0
-          max_instances: 10
+          memory: "256M"
+          secrets: "NEON_DATABASE_URL=projects/greg-finley/secrets/NEON_DATABASE_URL/versions/latest,DROPBOX_ACCESS_TOKEN=projects/greg-finley/secrets/DROPBOX_ACCESS_TOKEN/versions/latest,DROPBOX_CONFIG=projects/greg-finley/secrets/DROPBOX_CONFIG/versions/latest"
+          service_timeout: "540s"
+          event_trigger_pubsub_topic: "projects/greg-finley/topics/dropbox-queue-files"
+          min_instance_count: 0
+          max_instance_count: 10

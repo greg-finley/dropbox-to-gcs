@@ -25,13 +25,14 @@ jobs:
           credentials_json: "${{ secrets.gcp_credentials }}"
 
       - id: "deploy"
-        uses: "google-github-actions/deploy-cloud-functions@v1"
+        uses: "google-github-actions/deploy-cloud-functions@v4"
         with:
-          name: "projects/greg-finley/locations/us-west1/functions/dropbox-webhook"
+          name: "dropbox-webhook"
+          region: "us-west1"
           runtime: "python312"
           entry_point: "run"
           source_dir: "webhook"
-          memory_mb: 128
-          timeout: 60
-          min_instances: 0
-          max_instances: 10
+          memory: "128M"
+          service_timeout: "60s"
+          min_instance_count: 0
+          max_instance_count: 10
