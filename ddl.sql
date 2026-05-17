@@ -5,7 +5,8 @@ CREATE TABLE dropbox (
 	desktop_path VARCHAR(300) NOT NULL UNIQUE,
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	status status_type DEFAULT 'done',
-	filename VARCHAR(300) NOT NULL
+	filename VARCHAR(300) NOT NULL,
+	content_hash VARCHAR(67)
 );
 
 CREATE INDEX filename_index ON dropbox (filename);

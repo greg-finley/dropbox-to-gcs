@@ -32,21 +32,22 @@ def main(filename):
     dbx = dropbox.Dropbox(dropbox_access_token)
     print(f"Processing {filename}...")
     dropbox_file = dbx.files_download("/" + filename)
+    content_hash = dropbox_file[0].content_hash
     content_type = dropbox_file[1].headers.get("Content-Type")
     gcs_file = gcs_bucket.blob(filename)
     gcs_file.upload_from_string(
         dropbox_file[1].content, content_type=content_type, timeout=400
     )
-    update_status(filename, "done")
+    update_status(filename, "done", content_hash)
     print(f"Uploaded {filename} - {content_type}")
 
 
-def update_status(filename, status):
+def update_status(filename, status, content_hash=None):
     query = """
-    INSERT INTO dropbox (desktop_path, filename, status)
-    VALUES (%s, SPLIT_PART(%s, '/', -1), %s)
-    ON CONFLICT (desktop_path) DO UPDATE SET status = %s
+    INSERT INTO dropbox (desktop_path, filename, status, content_hash)
+    VALUES (%s, SPLIT_PART(%s, '/', -1), %s, %s)
+    ON CONFLICT (desktop_path) DO UPDATE SET status = %s, content_hash = %s
     """
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
-            cursor.execute(query, (filename, filename, status, status))
+            cursor.execute(query, (filename, filename, status, content_hash, status, content_hash))
