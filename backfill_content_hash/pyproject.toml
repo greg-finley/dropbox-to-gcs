@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "backfill-content-hash"
+version = "0.1.0"
+description = "Backfill content_hash for existing rows in the dropbox table"
+authors = ["Greg Finley <gregory.finley@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+dropbox = "^12.0.2"
+psycopg = "^3.1.18"
+python-dotenv = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
