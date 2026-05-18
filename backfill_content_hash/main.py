@@ -4,7 +4,7 @@ import dropbox
 import psycopg
 from dotenv import load_dotenv
 
-load_dotenv("../.env")
+load_dotenv("../.env", override=True)
 
 CHUNK_SIZE = 500
 

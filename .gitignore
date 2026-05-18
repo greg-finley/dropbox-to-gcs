@@ -1,5 +1,6 @@
 .env
 backfill_content_hash/hashes.tsv
+backfill_content_hash/dupes.csv
 .vscode
 file_list.txt
 gha-creds-*
