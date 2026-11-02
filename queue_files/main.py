@@ -49,14 +49,21 @@ def run(event, context):
         clean_name = entry.path_display.removeprefix("/")
         if isinstance(entry, dropbox.files.FileMetadata):
             print(f"Queueing {clean_name}")
+            # Insert new paths as pending. If the path was previously deleted
+            # (e.g. moved out and back in), revive it so it gets re-uploaded.
+            # Reset created_at so the stale-pending requeue below doesn't
+            # immediately double-queue it.
             query = """
             INSERT INTO dropbox (desktop_path, filename, status)
             VALUES (%s, SPLIT_PART(%s, '/', -1), 'pending')
+            ON CONFLICT (desktop_path) DO UPDATE
+              SET status = 'pending', created_at = CURRENT_TIMESTAMP
+              WHERE dropbox.status = 'deleted'
+            RETURNING id
             """
             with conn.cursor() as cursor:
-                try:
-                    cursor.execute(query, (clean_name, clean_name))
-                except psycopg.errors.UniqueViolation as err:
+                cursor.execute(query, (clean_name, clean_name))
+                if cursor.fetchone() is None:
                     print(f"Already queued {clean_name}")
                     continue
 
